@@ -3,11 +3,37 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33516.290
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6CC4EE0F-B89C-4586-9927-F93BE43CB4F4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{5748F2F0-A3B5-4D31-916B-4FBA07E24D94}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Starfish.Consumer", "src\Starfish.Consumer\Starfish.Consumer.csproj", "{F1773464-008C-40E3-B321-8CE6372C23C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Starfish.Producer", "src\Starfish.Producer\Starfish.Producer.csproj", "{9B10E7AC-69CA-4787-BAA5-0B533359DD7B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Starfish.Tests", "test\Starfish.Tests\Starfish.Tests.csproj", "{5FCFB127-9925-4185-A916-D2A1BFD2F8C5}"
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1108E2B7-3109-4972-A69F-8B8FE6FCE4AF}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F1773464-008C-40E3-B321-8CE6372C23C5} = {6CC4EE0F-B89C-4586-9927-F93BE43CB4F4}
+		{9B10E7AC-69CA-4787-BAA5-0B533359DD7B} = {6CC4EE0F-B89C-4586-9927-F93BE43CB4F4}
+		{5FCFB127-9925-4185-A916-D2A1BFD2F8C5} = {5748F2F0-A3B5-4D31-916B-4FBA07E24D94}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F1773464-008C-40E3-B321-8CE6372C23C5}.|Any CPU.ActiveCfg = |Any CPU
+		{F1773464-008C-40E3-B321-8CE6372C23C5}.|Any CPU.Build.0 = |Any CPU
+		{9B10E7AC-69CA-4787-BAA5-0B533359DD7B}.|Any CPU.ActiveCfg = |Any CPU
+		{9B10E7AC-69CA-4787-BAA5-0B533359DD7B}.|Any CPU.Build.0 = |Any CPU
+		{5FCFB127-9925-4185-A916-D2A1BFD2F8C5}.|Any CPU.ActiveCfg = |Any CPU
+		{5FCFB127-9925-4185-A916-D2A1BFD2F8C5}.|Any CPU.Build.0 = |Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		|Any CPU = |Any CPU
 	EndGlobalSection
 EndGlobal
