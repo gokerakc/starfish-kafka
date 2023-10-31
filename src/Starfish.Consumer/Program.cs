@@ -13,4 +13,4 @@ builder.ConfigureServices(services =>
 var host = await builder.StartAsync();
 
 var consumer = host.Services.GetRequiredService<IKafkaEventConsumer>();
-await consumer.ReceiveAsync();
+consumer.Run();

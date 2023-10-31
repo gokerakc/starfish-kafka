@@ -2,5 +2,5 @@ namespace Starfish.Consumer;
 
 public interface IKafkaEventConsumer
 {
-    public Task ReceiveAsync();
+    public void Run();
 }

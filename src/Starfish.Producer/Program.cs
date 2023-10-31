@@ -4,14 +4,16 @@ using Starfish.Producer;
 
 var builder = Host.CreateDefaultBuilder(args);
 
-builder.ConfigureServices(services =>
+builder.ConfigureServices((context, services) =>
 {
     services.AddScoped<IKafkaEventProducer, KafkaEventProducer>();
     services.AddLogging();
+
+    services.Configure<KafkaConnectionSettings>(context.Configuration.GetSection(nameof(KafkaConnectionSettings)));
 });
 
 var host = await builder.StartAsync();
 
 var producer = host.Services.GetRequiredService<IKafkaEventProducer>();
-producer.Send("Hello world!");
+producer.Run();
 
