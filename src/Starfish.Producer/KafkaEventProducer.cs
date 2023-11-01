@@ -6,7 +6,7 @@ namespace Starfish.Producer;
 public class KafkaEventProducer : IKafkaEventProducer
 {
     private readonly ProducerConfig _producerConfig;
-    public KafkaEventProducer(IOptions<KafkaConnectionSettings> options)
+    public KafkaEventProducer(IOptions<KafkaProducerSettings> options)
     {
         var settings = options.Value;
 
@@ -17,12 +17,13 @@ public class KafkaEventProducer : IKafkaEventProducer
             SaslPassword = settings.SaslPassword,
             SaslMechanism = settings.SaslMechanisms,
             SecurityProtocol = settings.SecurityProtocol,
+            ClientId = "starfish"
         };
     }
     
-    public void Run()
+    public void Run(CancellationToken cancellationToken)
     {
-        const string topic = "test";
+        const string topic = "eu-west-2-demo";
 
         string[] users = { "eabara", "jsmith", "sgarcia", "jbernard", "htanaka", "awalther" };
         string[] items = { "book", "alarm clock", "t-shirts", "gift card", "batteries" };
@@ -31,7 +32,7 @@ public class KafkaEventProducer : IKafkaEventProducer
         {
             var numProduced = 0;
             var rnd = new Random();
-            const int numMessages = 10;
+            const int numMessages = 100000;
             for (var i = 0; i < numMessages; ++i)
             {
                 var user = users[rnd.Next(users.Length)];

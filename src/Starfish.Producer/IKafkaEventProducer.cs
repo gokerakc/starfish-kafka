@@ -2,5 +2,5 @@ namespace Starfish.Producer;
 
 public interface IKafkaEventProducer
 {
-    public void Run();
+    public void Run(CancellationToken cancellationToken);
 }
