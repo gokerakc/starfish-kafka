@@ -17,7 +17,7 @@ public class KafkaEventProducer : IKafkaEventProducer
             SaslPassword = settings.SaslPassword,
             SaslMechanism = settings.SaslMechanisms,
             SecurityProtocol = settings.SecurityProtocol,
-            ClientId = "starfish"
+            ClientId = "starfish-producer"
         };
     }
     
