@@ -17,4 +17,8 @@ public class KafkaConsumerSettings
     public SecurityProtocol SecurityProtocol { get; set; }
 
     public SaslMechanism SaslMechanisms { get; set; }
+    
+    public string? SchemaRegistryUrl { get; set; }
+    
+    public string? SchemaRegistryAuth { get; set; }
 }

@@ -1,11 +1,11 @@
 using Confluent.Kafka;
+using Confluent.SchemaRegistry;
 using Microsoft.Extensions.Options;
 
 namespace Starfish.Consumer;
 
 public class KafkaEventConsumer : IKafkaEventConsumer
 {
-
     private readonly ConsumerConfig _consumerConfig;
 
     private const string Topic = "eu-west-2-demo";
@@ -24,12 +24,17 @@ public class KafkaEventConsumer : IKafkaEventConsumer
             SaslMechanism = settings.SaslMechanisms,
             SecurityProtocol = settings.SecurityProtocol,
         };
+
+        // _schemaRegistryConfig = new SchemaRegistryConfig
+        // {
+        //     Url = settings.SchemaRegistryUrl,
+        //     BasicAuthUserInfo = settings.SchemaRegistryAuth
+        // };
     }
 
 
     public void Run(CancellationToken cancellationToken)
     {
-
         using (var consumer = new ConsumerBuilder<Ignore, string>(_consumerConfig).Build())
         {
             consumer.Subscribe(Topic);
