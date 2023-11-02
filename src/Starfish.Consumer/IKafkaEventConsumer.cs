@@ -2,5 +2,5 @@ namespace Starfish.Consumer;
 
 public interface IKafkaEventConsumer
 {
-    public void Run(CancellationToken cancellationToken);
+    public Task Run(CancellationToken cancellationToken);
 }

@@ -1,17 +1,26 @@
 using Confluent.Kafka;
+using Confluent.Kafka.SyncOverAsync;
 using Confluent.SchemaRegistry;
+using Confluent.SchemaRegistry.Serdes;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using NJsonSchema.Generation;
+using Starfish.Consumer.Models;
 
 namespace Starfish.Consumer;
 
 public class KafkaEventConsumer : IKafkaEventConsumer
 {
+    private readonly ISchemaRegistryClient _schemaRegistryClient;
     private readonly ConsumerConfig _consumerConfig;
 
-    private const string Topic = "eu-west-2-demo";
+    private const string Topic = "eu-west-2-basket-activity";
 
-    public KafkaEventConsumer(IOptions<KafkaConsumerSettings> options)
+    public KafkaEventConsumer(ISchemaRegistryClient schemaRegistryClient, IOptions<KafkaConsumerSettings> options)
     {
+        _schemaRegistryClient = schemaRegistryClient;
+        
         var settings = options.Value;
 
         _consumerConfig = new ConsumerConfig
@@ -24,18 +33,29 @@ public class KafkaEventConsumer : IKafkaEventConsumer
             SaslMechanism = settings.SaslMechanisms,
             SecurityProtocol = settings.SecurityProtocol,
         };
-
-        // _schemaRegistryConfig = new SchemaRegistryConfig
-        // {
-        //     Url = settings.SchemaRegistryUrl,
-        //     BasicAuthUserInfo = settings.SchemaRegistryAuth
-        // };
     }
 
 
-    public void Run(CancellationToken cancellationToken)
+    public async Task Run(CancellationToken cancellationToken)
     {
-        using (var consumer = new ConsumerBuilder<Ignore, string>(_consumerConfig).Build())
+        var jsonSchemaGeneratorSettings = new JsonSchemaGeneratorSettings
+        {
+            SerializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver
+                {
+                    NamingStrategy = new CamelCaseNamingStrategy()
+                }
+            }
+        };
+
+        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{Topic}-value", 1);
+        var jsonDeserializer = new JsonDeserializer<BasketActivity>(_schemaRegistryClient, latestSchema.Schema, config: null, jsonSchemaGeneratorSettings);
+
+        using (var consumer = new ConsumerBuilder<long, BasketActivity>(_consumerConfig)
+                   .SetValueDeserializer(jsonDeserializer.AsSyncOverAsync())
+                   .SetErrorHandler((_, e) => Console.WriteLine($"Error: {e.Reason}"))
+                   .Build())
         {
             consumer.Subscribe(Topic);
 
