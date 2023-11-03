@@ -2,13 +2,13 @@ using Confluent.SchemaRegistry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Starfish.Consumer.Extensions;
+namespace Starfish.Producer.Extensions;
 
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSchemaRegistry(this IServiceCollection services, IConfiguration config)
     {
-        var settings = config.GetSection(nameof(KafkaConsumerSettings)).Get<KafkaConsumerSettings>();
+        var settings = config.GetSection(nameof(KafkaProducerSettings)).Get<KafkaProducerSettings>();
         
         var schemaRegistryConfig = new SchemaRegistryConfig
         {

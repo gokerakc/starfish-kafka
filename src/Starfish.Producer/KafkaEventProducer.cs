@@ -1,13 +1,26 @@
 using Confluent.Kafka;
+using Confluent.SchemaRegistry;
+using Confluent.SchemaRegistry.Serdes;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
+using NJsonSchema.Generation;
+using Starfish.Producer.Models;
 
 namespace Starfish.Producer;
 
 public class KafkaEventProducer : IKafkaEventProducer
 {
+    const string TopicName = "eu-west-2-basket-activities";
+
+
+    private readonly ISchemaRegistryClient _schemaRegistryClient;
     private readonly ProducerConfig _producerConfig;
-    public KafkaEventProducer(IOptions<KafkaProducerSettings> options)
+
+    public KafkaEventProducer(ISchemaRegistryClient schemaRegistryClient, IOptions<KafkaProducerSettings> options)
     {
+        _schemaRegistryClient = schemaRegistryClient;
+
         var settings = options.Value;
 
         _producerConfig = new ProducerConfig
@@ -21,44 +34,55 @@ public class KafkaEventProducer : IKafkaEventProducer
         };
     }
     
-    public void Run(CancellationToken cancellationToken)
+    public async Task Run(CancellationToken cancellationToken)
     {
-        const string topic = "eu-west-2-demo";
-
-        string[] users = { "eabara", "jsmith", "sgarcia", "jbernard", "htanaka", "awalther" };
-        string[] items = { "book", "alarm clock", "t-shirts", "gift card", "batteries" };
-        
-        using (var producer = new ProducerBuilder<string, string>(_producerConfig).Build())
+        var jsonSerializerConfig = new JsonSerializerConfig
         {
-            var numProduced = 0;
-            var rnd = new Random();
-            const int numMessages = 100000;
-            for (var i = 0; i < numMessages; ++i)
-            {
-                var user = users[rnd.Next(users.Length)];
-                var item = items[rnd.Next(items.Length)];
+            BufferBytes = 100,
+            UseLatestVersion = true,
+            AutoRegisterSchemas = false,
+           // SubjectNameStrategy = SubjectNameStrategy.TopicRecord
+        };
 
-                producer.Produce(topic, new Message<string, string>
-                    {
-                        Key = user,
-                        Value = item
-                    },
-                    (deliveryReport) =>
-                    {
-                        if (deliveryReport.Error.Code != ErrorCode.NoError)
-                        {
-                            Console.WriteLine($"Failed to deliver message: {deliveryReport.Error.Reason}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Produced event to topic {topic}: key = {user,-10} value = {item}");
-                            numProduced += 1;
-                        }
-                    });
+        var jsonSchemaGeneratorSettings = new JsonSchemaGeneratorSettings
+        {
+            SerializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver
+                {
+                    NamingStrategy = new CamelCaseNamingStrategy()
+                }
+            }
+        };
+
+        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{TopicName}-BasketActivity", 1);
+        latestSchema.Schema.Subject = "eu-west-2-basket-activities-BasketActivity";
+
+        // Error: System.ArgumentNullException: 'Value cannot be null. Arg_ParamName_Name'
+        var jsonSeserializer = new JsonSerializer<BasketActivity>(_schemaRegistryClient, latestSchema,jsonSerializerConfig, jsonSchemaGeneratorSettings);
+
+        using (var producer =
+            new ProducerBuilder<string, BasketActivity>(_producerConfig)
+                .SetValueSerializer(jsonSeserializer)
+                .Build())
+        {
+            for (int i = 0; i < 10; i++)
+            {
+
+                BasketActivity basketActivity = new BasketActivity { UserId = $"x-{i}", ItemId = $"item{i}", ActivityType = ActivityType.Added, Quantity = 1 };
+                try
+                {
+                    var a = await producer.ProduceAsync(TopicName, new Message<string, BasketActivity> { Key = $"x-{i}", Value = basketActivity });
+                    Console.WriteLine(a.Offset);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"error producing message: {e.Message}");
+                }
             }
 
             producer.Flush(TimeSpan.FromSeconds(10));
-            Console.WriteLine($"{numProduced} messages were produced to topic {topic}");
         }
+
     }
 }

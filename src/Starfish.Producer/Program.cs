@@ -1,12 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Starfish.Producer;
+using Starfish.Producer.Extensions;
 
 var builder = Host.CreateDefaultBuilder(args);
 
 builder.ConfigureServices((context, services) =>
 {
     services.AddScoped<IKafkaEventProducer, KafkaEventProducer>();
+    services.AddSchemaRegistry(context.Configuration);
     services.AddLogging();
 
     services.Configure<KafkaProducerSettings>(context.Configuration.GetSection(nameof(KafkaProducerSettings)));
@@ -19,7 +21,7 @@ var producer = host.Services.GetRequiredService<IKafkaEventProducer>();
 
 var cancellationToken = RegisterCancellationToken(applicationLifeTime);
 
-producer.Run(cancellationToken);
+await producer.Run(cancellationToken);
 
 
 CancellationToken RegisterCancellationToken(IHostApplicationLifetime applicationLifetime)

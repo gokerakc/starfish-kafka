@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Starfish.Consumer.Models;
+namespace Starfish.Producer.Models;
 
 public record BasketActivity
 {

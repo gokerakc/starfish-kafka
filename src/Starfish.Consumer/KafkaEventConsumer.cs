@@ -12,10 +12,11 @@ namespace Starfish.Consumer;
 
 public class KafkaEventConsumer : IKafkaEventConsumer
 {
+    const string TopicName = "eu-west-2-basket-activities";
+
     private readonly ISchemaRegistryClient _schemaRegistryClient;
     private readonly ConsumerConfig _consumerConfig;
 
-    private const string Topic = "eu-west-2-basket-activity";
 
     public KafkaEventConsumer(ISchemaRegistryClient schemaRegistryClient, IOptions<KafkaConsumerSettings> options)
     {
@@ -49,15 +50,19 @@ public class KafkaEventConsumer : IKafkaEventConsumer
             }
         };
 
-        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{Topic}-value", 1);
-        var jsonDeserializer = new JsonDeserializer<BasketActivity>(_schemaRegistryClient, latestSchema.Schema, config: null, jsonSchemaGeneratorSettings);
 
-        using (var consumer = new ConsumerBuilder<long, BasketActivity>(_consumerConfig)
+        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{TopicName}-BasketActivity", 1);
+
+        // Error: System.ArgumentNullException: 'Value cannot be null. Arg_ParamName_Name'
+        var jsonDeserializer = new JsonDeserializer<BasketActivity>(_schemaRegistryClient, latestSchema.Schema, null, jsonSchemaGeneratorSettings);
+
+        using (var consumer = new ConsumerBuilder<string, BasketActivity>(_consumerConfig)
+                   .SetKeyDeserializer(Deserializers.Utf8)
                    .SetValueDeserializer(jsonDeserializer.AsSyncOverAsync())
                    .SetErrorHandler((_, e) => Console.WriteLine($"Error: {e.Reason}"))
                    .Build())
         {
-            consumer.Subscribe(Topic);
+            consumer.Subscribe(TopicName);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -65,7 +70,9 @@ public class KafkaEventConsumer : IKafkaEventConsumer
                 {
                     var consumeResult = consumer.Consume(cancellationToken);
 
-                    Console.WriteLine($"Partition: {consumeResult.Partition} | Message: {consumeResult.Message.Value} | Offset: {consumeResult.Offset} | TopicPartitionOffset: {consumeResult.TopicPartitionOffset}");
+                    var activity = consumeResult.Message.Value as BasketActivity;
+
+                    Console.WriteLine($"Partition: {consumeResult.Partition} | Value: {activity} | Offset: {consumeResult.Offset} | TopicPartitionOffset: {consumeResult.TopicPartitionOffset}");
                 }
                 catch (OperationCanceledException)
                 {

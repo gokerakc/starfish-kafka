@@ -13,4 +13,8 @@ public class KafkaProducerSettings
     public string? SaslUsername { get; set; }
     
     public string? SaslPassword { get; set; }
+
+    public string? SchemaRegistryUrl { get; set; }
+
+    public string? SchemaRegistryAuth { get; set; }
 }
