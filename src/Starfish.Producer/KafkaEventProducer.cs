@@ -1,9 +1,11 @@
 using Confluent.Kafka;
+using Confluent.Kafka.SyncOverAsync;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NJsonSchema.Generation;
 using Starfish.Producer.Models;
 
@@ -11,8 +13,7 @@ namespace Starfish.Producer;
 
 public class KafkaEventProducer : IKafkaEventProducer
 {
-    const string TopicName = "eu-west-2-basket-activities";
-
+    private const string TopicName = "eu-west-2-basket-activities";
 
     private readonly ISchemaRegistryClient _schemaRegistryClient;
     private readonly ProducerConfig _producerConfig;
@@ -41,7 +42,7 @@ public class KafkaEventProducer : IKafkaEventProducer
             BufferBytes = 100,
             UseLatestVersion = true,
             AutoRegisterSchemas = false,
-           // SubjectNameStrategy = SubjectNameStrategy.TopicRecord
+            SubjectNameStrategy = SubjectNameStrategy.TopicRecord,
         };
 
         var jsonSchemaGeneratorSettings = new JsonSchemaGeneratorSettings
@@ -50,30 +51,30 @@ public class KafkaEventProducer : IKafkaEventProducer
             {
                 ContractResolver = new DefaultContractResolver
                 {
-                    NamingStrategy = new CamelCaseNamingStrategy()
-                }
-            }
+                    NamingStrategy = new CamelCaseNamingStrategy(),
+                },
+                Converters = new List<JsonConverter>
+                {
+                    new StringEnumConverter(new CamelCaseNamingStrategy()),
+                },
+            },
         };
 
-        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{TopicName}-BasketActivity", 1);
-        latestSchema.Schema.Subject = "eu-west-2-basket-activities-BasketActivity";
-
-        // Error: System.ArgumentNullException: 'Value cannot be null. Arg_ParamName_Name'
-        var jsonSeserializer = new JsonSerializer<BasketActivity>(_schemaRegistryClient, latestSchema,jsonSerializerConfig, jsonSchemaGeneratorSettings);
+        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{TopicName}-BasketActivity", 3);
+        var jsonSerializer = new JsonSerializer<BasketActivity>(_schemaRegistryClient, latestSchema,jsonSerializerConfig, jsonSchemaGeneratorSettings);
 
         using (var producer =
             new ProducerBuilder<string, BasketActivity>(_producerConfig)
-                .SetValueSerializer(jsonSeserializer)
+                .SetValueSerializer(jsonSerializer.AsSyncOverAsync())
                 .Build())
         {
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
-
-                BasketActivity basketActivity = new BasketActivity { UserId = $"x-{i}", ItemId = $"item{i}", ActivityType = ActivityType.Added, Quantity = 1 };
+                BasketActivity basketActivity = new BasketActivity { UserId = $"x-{i}", ItemId = $"item{i}", ActivityType = ActivityType.Added, Quantity = 1, Timestamp = DateTime.UtcNow};
                 try
                 {
-                    var a = await producer.ProduceAsync(TopicName, new Message<string, BasketActivity> { Key = $"x-{i}", Value = basketActivity });
-                    Console.WriteLine(a.Offset);
+                    var deliveryResult = await producer.ProduceAsync(TopicName, new Message<string, BasketActivity> { Key = $"x-{i}", Value = basketActivity });
+                    Console.WriteLine(deliveryResult.Offset);
                 }
                 catch (Exception e)
                 {

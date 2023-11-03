@@ -12,7 +12,7 @@ namespace Starfish.Consumer;
 
 public class KafkaEventConsumer : IKafkaEventConsumer
 {
-    const string TopicName = "eu-west-2-basket-activities";
+    private const string TopicName = "eu-west-2-basket-activities";
 
     private readonly ISchemaRegistryClient _schemaRegistryClient;
     private readonly ConsumerConfig _consumerConfig;
@@ -45,15 +45,13 @@ public class KafkaEventConsumer : IKafkaEventConsumer
             {
                 ContractResolver = new DefaultContractResolver
                 {
-                    NamingStrategy = new CamelCaseNamingStrategy()
+                    NamingStrategy = new CamelCaseNamingStrategy(),
                 }
             }
         };
 
+        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{TopicName}-BasketActivity", 3);
 
-        var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{TopicName}-BasketActivity", 1);
-
-        // Error: System.ArgumentNullException: 'Value cannot be null. Arg_ParamName_Name'
         var jsonDeserializer = new JsonDeserializer<BasketActivity>(_schemaRegistryClient, latestSchema.Schema, null, jsonSchemaGeneratorSettings);
 
         using (var consumer = new ConsumerBuilder<string, BasketActivity>(_consumerConfig)

@@ -4,8 +4,7 @@ namespace Starfish.Producer.Models;
 
 public record BasketActivity
 {
-
-    [JsonProperty("activityType")]
+    [JsonProperty("activityType")] 
     public ActivityType ActivityType { get; set; }
 
     [JsonProperty("itemId")]

@@ -1,10 +1,10 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Starfish.Consumer.Models;
 
 public record BasketActivity
 {
-
     [JsonProperty("activityType")]
     public ActivityType ActivityType { get; set; }
 
