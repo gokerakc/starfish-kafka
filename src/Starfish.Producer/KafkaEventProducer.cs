@@ -71,18 +71,29 @@ public class KafkaEventProducer : IKafkaEventProducer
             for (var i = 0; i < 10; i++)
             {
                 BasketActivity basketActivity = new BasketActivity { UserId = $"x-{i}", ItemId = $"item{i}", ActivityType = ActivityType.Added, Quantity = 1, Timestamp = DateTime.UtcNow};
+
                 try
                 {
-                    var deliveryResult = await producer.ProduceAsync(TopicName, new Message<string, BasketActivity> { Key = $"x-{i}", Value = basketActivity });
+                    var message = new Message<string, BasketActivity> { Key = $"x-{i}", Value = basketActivity };
+
+                    var deliveryResult = await producer.ProduceAsync(TopicName, message, cancellationToken);
+
                     Console.WriteLine(deliveryResult.Offset);
                 }
-                catch (Exception e)
+                catch (KafkaException e)
                 {
-                    Console.WriteLine($"error producing message: {e.Message}");
+                    Console.WriteLine($@"An error occured while producing events. Message: ""{e.Message}"" InnerException: ""{e.InnerException}""");
+                }
+                catch (OperationCanceledException)
+                {
+
+                    Console.WriteLine("Produce operation has been cancelled");
+                    break;
                 }
             }
 
             producer.Flush(TimeSpan.FromSeconds(10));
+            Console.WriteLine("All produce processes are completed.");
         }
 
     }

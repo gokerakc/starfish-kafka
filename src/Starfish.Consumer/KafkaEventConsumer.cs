@@ -4,6 +4,7 @@ using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using NJsonSchema.Generation;
 using Starfish.Consumer.Models;
@@ -46,8 +47,12 @@ public class KafkaEventConsumer : IKafkaEventConsumer
                 ContractResolver = new DefaultContractResolver
                 {
                     NamingStrategy = new CamelCaseNamingStrategy(),
-                }
-            }
+                },
+                Converters = new List<JsonConverter>
+                {
+                    new StringEnumConverter(new CamelCaseNamingStrategy()),
+                },
+            },
         };
 
         var latestSchema = await _schemaRegistryClient.GetRegisteredSchemaAsync($"{TopicName}-BasketActivity", 3);
@@ -68,16 +73,19 @@ public class KafkaEventConsumer : IKafkaEventConsumer
                 {
                     var consumeResult = consumer.Consume(cancellationToken);
 
-                    var activity = consumeResult.Message.Value as BasketActivity;
+                    Console.WriteLine($"Partition: {consumeResult.Partition} | Key: {consumeResult.Message.Key} | Value: {consumeResult.Message.Value} | Offset: {consumeResult.Offset} | TopicPartitionOffset: {consumeResult.TopicPartitionOffset}");
+                }
+                catch (KafkaException e)
+                {
 
-                    Console.WriteLine($"Partition: {consumeResult.Partition} | Value: {activity} | Offset: {consumeResult.Offset} | TopicPartitionOffset: {consumeResult.TopicPartitionOffset}");
+                    Console.WriteLine($@"An error occured while consuming messages. Message: ""{e.Message}"" InnerException: ""{e.InnerException}""");
                 }
                 catch (OperationCanceledException)
                 {
 
                     Console.WriteLine("Consume operation has been cancelled");
                 }
-                
+
             }
 
             Console.WriteLine("Stopped consuming messages...");
